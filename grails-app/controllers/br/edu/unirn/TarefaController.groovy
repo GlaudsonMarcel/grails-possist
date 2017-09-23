@@ -1,5 +1,6 @@
 package br.edu.unirn
 
+import br.edu.unirn.tipos.StatusTarefa
 import grails.converters.JSON
 
 class TarefaController {
@@ -7,12 +8,15 @@ class TarefaController {
     static scaffold = Tarefa
 
     def index(){}
+    def buscaTarefa(){}
 
     def save(){
         params << request.JSON
         Tarefa tarefa = new Tarefa()
         bindData(tarefa, params, [exclude:['dataLimite']])
         tarefa.dataLimite = params.date('dataLimite', 'dd/MM/yyyy')
+        if (tarefa.usuarioAbertura == null)
+            tarefa.usuarioAbertura = session.usuario
 
         if(!tarefa.save(flush: true)){
             tarefa.errors.each {println it}
@@ -71,4 +75,65 @@ class TarefaController {
 
         render status: 200
     }
+    def buscarTarefa(){
+
+        def retorno = []
+        def busca = []
+
+        params << request.JSON
+
+        def titulo = params.titulo
+        def texto = params.texto
+        def usuarioAbert = params.usuarioAbertura
+        def usuarioResp = params.usuarioResponsavel
+        def tipo = params.tipoTarefa
+        def status = params.statusTarefa
+        def criteria = Tarefa.createCriteria()
+
+        busca = criteria.list {
+            if (titulo){
+                ilike("titulo", "%$titulo")
+            }
+            if (texto) {
+                ilike("texto","%$texto%")
+            }
+            if (usuarioAbert) {
+                usuarioAbertura{
+                    ilike("email","%$usuarioAbert%")
+                }
+            }
+            if (usuarioResp) {
+                usuarioResponsavel {
+                    ilike("email","%$usuarioResp%")
+                }
+            }
+            if (tipo) {
+                tipoTarefa {
+                    ilike("descricao", "%$tipo%")
+                }
+            }
+            if (status) {
+                println("quase2")
+                eq("statusTarefa", StatusTarefa.valueOf(status))
+            }
+        }
+
+        busca.each {
+            println(it.titulo)
+            retorno.add([
+                    id: it.id,
+                    titulo: it.titulo,
+                    usuarioAbertura: it.usuarioAbertura.email,
+                    usuarioResponsavel: it.usuarioResponsavel?.email,
+                    dataLimite: it.dataLimite.format("dd/MM/yyyy"),
+                    tipoTarefa: it.tipoTarefa.descricao,
+                    statusTarefa: it.statusTarefa.name(),
+                    porcentagem: it.porcentagem
+            ])
+        }
+
+        render retorno as JSON
+
+    }
+
 }

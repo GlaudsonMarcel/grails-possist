@@ -3,7 +3,9 @@ var tarefa = new Vue({
     data: {
         tarefas: [],
         tarefa: {},
-        loading: false
+        logsTarefa: [],
+        loading: false,
+        somenteLeitura : false
     },
     methods: {
         getTarefas: function(){
@@ -17,6 +19,9 @@ var tarefa = new Vue({
         },
         novaTarefa: function(){
             this.tarefa = {};
+            this.tarefa.dataLimite = moment().add(1, 'days').format("DD/MM/YYYY");
+            this.tarefa.porcentagem = 0;
+            this.somenteLeitura = false;
             $("#formTarefa").modal('show');
         },
         salvarTarefa: function(){
@@ -37,12 +42,52 @@ var tarefa = new Vue({
         },
         updateTarefa: function(){
             this.$http.put(window.baseUrl+"tarefa/update/"+this.tarefa.id, this.tarefa).then(function(resp){
-                this.getTarefas();
-                $("#formTarefa").modal('hide');
-                this.tarefa = {};
+                this.getTarefas()
+                $("#formTarefa").modal('hide')
+                this.tarefa = {}
             }, function(resp){
             })
+        },
+        modalTarefa: function (tarefa) {
+            this.$http.get(window.baseUrl+"tarefa/show/"+tarefa.id).then(function(resp){
+                this.tarefa = resp.data
+            },
+            this.$http.get(window.baseUrl+"logTarefa/list/"+tarefa.id).then(function (resp) {
+                this.logsTarefa = resp.data
+                this.somenteLeitura = true
+                $("#formModalTarefa").modal('show')
+            }), function(resp){
+                    console.info(error)
+            })
+        },
+        novoLogTarefa: function () {
+            this.logTarefa = {}
+            this.logTarefa.tarefa = this.tarefa
+            this.somenteLeitura = false
+            $("#formModalTarefa").modal('hide')
+            $("#formLogTarefa").modal('show')
+        },
+        salvarLogTarefa: function(){
+            this.$http.post(window.baseUrl+"logTarefa/save", this.logTarefa).then(function(resp) {
+                $("#formLogTarefa").modal('hide');
+                this.modalTarefa(this.tarefa)
+            },
+            function(error){
+                console.info(error)
+            })
+        },
+        buscaTarefas: function(){
+            this.loading = true
+            this.tarefas = []
+            this.$http.post(window.baseUrl+"tarefa/buscarTarefa/", this.tarefaConsulta).then(function(resp){
+                this.tarefas = resp.data
+                this.loading = false
+                this.tarefaConsulta = {}
+            }, function(err){
+                this.loading = false
+            })
         }
+
     },
     ready: function(){
         this.getTarefas();

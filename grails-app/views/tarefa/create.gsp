@@ -74,6 +74,7 @@
                     <label for="porcentagem" class="col-sm-2 control-label">Porcentagem</label>
                     <div class="col-sm-10">
                         <g:field type="number" name="porcentagem" class="form-control"/>
+                        
                     </div>
                 </div>
             </fieldset>
